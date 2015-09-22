@@ -4,21 +4,38 @@ namespace model;
 
 class LoginPersistor {
 
-    private static $sessionIsAuthenticated = 'UserModel::IsAuthenthicated';
-    private static $sessionUserName = 'UserModel::UserName';
+    private static $sessionIsAuthenticated = 'LoginPersistor::IsAuthenthicated';
+    private static $sessionUserName = 'LoginPersistor::UserName';
+    private static $sessionUserAgent = 'LoginPersistor::UserAgent';
 
     private static $filename = '../../data/Logins.txt';
+    private static $timeInSecondsToRememberLogins = 2592000; // 60*60*24*30 = 2592000 seconds = 30 days;
+
+    /**
+     * Retrieves the static $timeInSecondsToRememberLogins
+     * @return int
+     */
+    public function getTimeInSecondsToRememberLogins() {
+        return self::$timeInSecondsToRememberLogins;
+    }
 
     /**
      * Retrieves any user login from session
+     * @param $userAgent, string
      * @return UserModel|null
      */
-    public function getSessionLogin() {
+    public function getSessionLogin($userAgent) {
+
         if (isset($_SESSION[self::$sessionIsAuthenticated])) {
             if ($_SESSION[self::$sessionIsAuthenticated] === true && isset($_SESSION[self::$sessionUserName])) {
-                $userName = $_SESSION[self::$sessionUserName];
-                $user = new UserModel($userName);
-                return $user;
+
+                //make sure correct user agent (to somewhat prevent session hijacking)
+                if (isset($_SESSION[self::$sessionUserAgent]) && $_SESSION[self::$sessionUserAgent] == $userAgent) {
+
+                    $userName = $_SESSION[self::$sessionUserName];
+                    $user = new UserModel($userName);
+                    return $user;
+                }
             }
         }
         return null;
@@ -27,18 +44,21 @@ class LoginPersistor {
     /**
      * Logins the supplied user (to session)
      * @param UserModel $user
+     * @param $userAgent, string
      */
-    public function logInUser(UserModel $user) {
-        $_SESSION[self::$sessionUserName] = $user->getUserName();
+    public function logInUser(UserModel $user, $userAgent) {
         $_SESSION[self::$sessionIsAuthenticated] = true;
+        $_SESSION[self::$sessionUserName] = $user->getUserName();
+        $_SESSION[self::$sessionUserAgent] = $userAgent;
     }
 
     /**
      * Logs out the user (clears session from login)
      */
     public function logOutUser() {
-        unset($_SESSION[self::$sessionUserName]);
         unset($_SESSION[self::$sessionIsAuthenticated]);
+        unset($_SESSION[self::$sessionUserName]);
+        unset($_SESSION[self::$sessionUserAgent]);
     }
 
 
@@ -50,7 +70,7 @@ class LoginPersistor {
      * @return UserModel|null
      * @throws \Exception
      */
-    public function getSavedLogin($username, $tempPassword) {
+    public function getSavedLogin($username, $tempPassword, $userAgent) {
         assert(is_string($username) && is_string($tempPassword));
 
         //read the file
@@ -67,17 +87,23 @@ class LoginPersistor {
             $info = explode("::", $data);
 
             //make sure correct amount of data in the file
-            if (count($info) == 2) {
+            if (count($info) == 3 &&
+                is_numeric($info[2])) {
 
-                //check if correct username and temp password was supplied
+                //check if not expired
+                $currentTime = time();
+                $loginExpires = $info[2];
+
+                //check if correct username and temp password was supplied, and that the saved login hasn't expired
                 if (trim($info[0]) == $username &&
-                    trim($info[1]) == $tempPassword) {
+                    trim($info[1]) == $tempPassword &&
+                    $loginExpires > $currentTime) {
 
                     //all okay, return a UserModel
                     $user = new UserModel($username);
 
                     //login the user
-                    $this->logInUser($user);
+                    $this->logInUser($user, $userAgent);
 
                     return $user;
                 }
@@ -94,13 +120,15 @@ class LoginPersistor {
      * Saves the login storage file with supplied credentials
      * @param $userName, String
      * @param $tempPassword, String
+     * @param $loginExpiresAt, Number (in seconds)
      * @return bool
      * @throws \Exception
      */
     public function saveLoginFile($userName, $tempPassword) {
         assert(is_string($userName) && is_string($tempPassword));
 
-        $contents = $userName . '::' . $tempPassword; //(OBS: same separation characters in getSavedLogin())
+        $expires = time() + self::$timeInSecondsToRememberLogins;
+        $contents = $userName . '::' . $tempPassword . '::' . $expires; //(OBS: same separation characters in getSavedLogin())
         return $this->writeToLoginFile($contents);
     }
 

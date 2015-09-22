@@ -171,10 +171,11 @@ class LoginView {
 	 * Saves username and temp password to cookies
 	 * @param $username, String
 	 * @param $tempPassword, String
+	 * @param $expiresInSeconds, Number
 	 */
-	public function saveCookieCredentials($username, $tempPassword) {
-		$this->cookieStorage->save(self::$cookieName, $username);
-		$this->cookieStorage->save(self::$cookiePassword, $tempPassword);
+	public function saveCookieCredentials($username, $tempPassword, $expiresInSeconds) {
+		$this->cookieStorage->save(self::$cookieName, $username, $expiresInSeconds);
+		$this->cookieStorage->save(self::$cookiePassword, $tempPassword, $expiresInSeconds);
 	}
 	/**
 	 * Deletes username and temp password from cookies
@@ -186,6 +187,14 @@ class LoginView {
 		$this->cookieStorage->delete(self::$cookiePassword);
 	}
 
+	/**
+	 * Retrieves the browser's user agent
+	 * @return string
+	 */
+	public function getUserAgent()
+	{
+		return $_SERVER['HTTP_USER_AGENT'];
+	}
 
 
 	/**

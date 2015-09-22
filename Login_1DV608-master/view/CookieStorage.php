@@ -9,8 +9,8 @@ class CookieStorage {
      * @param $name, String
      * @param $value
      */
-    public static function save($name, $value) {
-        setcookie($name, $value, time()+60*60*24*30); //set cookie to last 30 days
+    public static function save($name, $value, $expiresInSeconds) {
+        setcookie($name, $value, $expiresInSeconds); //set cookie to last 30 days
         $_COOKIE[$name] = $value; //make sure it is put to the cookie array directly as well
     }
 

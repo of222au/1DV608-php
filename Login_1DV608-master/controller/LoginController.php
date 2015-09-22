@@ -28,19 +28,21 @@ class LoginController {
         $isLoggedIn = false; //can be untouched or set to 1 (did log in now) or 2 (was already logged in by session) or 3 (login retrieved from storage)
         $isLoggedOut = false; //true or false
 
-        //try to load user from session
-        $sessionUser = $this->loginPersistor->getSessionLogin(); //$lm->loadUserModel($this->loginView->getCookiePassword());
+        $userAgent = $this->loginView->getUserAgent();
 
-        //try to load user from storage by view's cookie username and temp password
+        //try to load user from session
+        $sessionUser = $this->loginPersistor->getSessionLogin($userAgent); //$lm->loadUserModel($this->loginView->getCookiePassword());
+
+        //check if possible to load user from storage by view's cookie credentials
         $storageUser = null;
-        $cookieUsername = $this->loginView->getCookieUsername();
-        $cookiePassword = $this->loginView->getCookiePassword();
-        if ($cookieUsername != '' && $cookiePassword != '') {
+        if ($this->loginView->getCookieUsername() != '' && $this->loginView->getCookiePassword() != '') {
+
             try {
                 //try to read user from storage
-                $storageUser = $this->loginPersistor->getSavedLogin($cookieUsername, $cookiePassword);
-            }
-            catch(\Exception $e) {
+                $cookieUsername = $this->loginView->getCookieUsername();
+                $cookiePassword = $this->loginView->getCookiePassword();
+                $storageUser = $this->loginPersistor->getSavedLogin($cookieUsername, $cookiePassword, $userAgent);
+            } catch (\Exception $e) {
                 //do nothing
             }
         }
@@ -90,7 +92,7 @@ class LoginController {
                 if ($this->user->hasCorrectLoginCredentials()) {
 
                     //successful login, save to session
-                    $this->loginPersistor->logInUser($this->user);
+                    $this->loginPersistor->logInUser($this->user, $userAgent);
                     $isLoggedIn = 1; // 1 = has performed a new login
                 }
             }
@@ -101,7 +103,8 @@ class LoginController {
 
             if ($isLoggedIn == true) {
                 //store the new temp password to view's cookies..
-                $this->loginView->saveCookieCredentials($this->user->getUserName(), $this->user->getTempPassword());
+                $expiresAt = time() + $this->loginPersistor->getTimeInSecondsToRememberLogins();
+                $this->loginView->saveCookieCredentials($this->user->getUserName(), $this->user->getTempPassword(), $expiresAt);
 
                 //..and to server storage file
                 try {
