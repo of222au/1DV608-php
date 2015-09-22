@@ -1,2 +1,2 @@
-# Login_1DV608
-Interface repository for 1DV608 assignment 2 and 4
+# Assignment 2. Login in the course "Webbutveckling med PHP"
+Solution can be tested online at: http://subleem.se/1DV608/
