@@ -1,0 +1,45 @@
+body {
+    /* background-color: #EEEEEE; */
+}
+
+
+/* ### ENTRY ACCESS VIEW ### */
+.entry-shared-with {
+    padding: 10px 0;
+}
+.entry-shared-with li {
+    list-style-type: none;
+
+}
+
+/* ### CHECKLIST ### */
+.checklist-footer {
+    background-color: #F4FCE8;
+    margin: 20px -15px 0px -15px; /* 0 -20px -10px -20px; */
+    padding: 10px 20px;
+}
+.checklist-footer .bottom-info {
+    padding-top: 6px;
+}
+
+.checklist-container {
+    /* background-color: white; */
+}
+
+.checkbox small {
+    color: #A8A8A8;
+}
+
+li.ui-state-default {
+    border: none;
+    border-bottom: 1px solid #ddd;
+}
+li.ui-state-default:last-child {
+    border-bottom: none;
+}
+li.ui-state-done {
+    padding: 10px 0;
+    border-bottom: 1px solid #ddd;
+    /* text-decoration: line-through; */
+}
+
