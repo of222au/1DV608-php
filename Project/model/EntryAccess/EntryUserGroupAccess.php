@@ -2,29 +2,33 @@
 
 namespace model;
 
+/**
+ * Class EntryUserGroupAccess
+ * keeps info on which access a specific user group has
+ * @package model
+ */
 class EntryUserGroupAccess {
 
-    private $userGroupId;
-    private $userGroupName;
+    private $userGroup;  // \model\UserGroup
     private $access; //string, any of the \Settings::ACCESS_TYPE_...
 
-    public function __construct($userGroupId, $userGroupName, $access) {
-        assert(is_numeric($userGroupId));
-        assert(is_string($userGroupName));
+    public function __construct(UserGroup $userGroup, $access) {
         assert($access == null || is_string($access));
 
-        $this->userGroupId = $userGroupId;
-        $this->userGroupName = $userGroupName;
+        $this->userGroup = $userGroup;
         $this->access = $access;
     }
 
     public function getUserGroupId() {
-        return $this->userGroupId;
+        return $this->userGroup->getId();
     }
     public function getUserGroupName() {
-        return $this->userGroupName;
+        return $this->userGroup->getName();
+    }
+    public function getUserGroup() {
+        return $this->userGroup;
     }
     public function getAccess() {
-        return $this->userGroupId;
+        return $this->access;
     }
 }

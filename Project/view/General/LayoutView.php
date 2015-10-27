@@ -4,62 +4,67 @@ namespace view;
 
 require_once('view/General/NavigationBarView.php');
 require_once('view/General/NavigationView.php');
-require_once('view/General/DateTimeView.php');
 require_once('view/General/CookieStorage.php');
 
+/**
+ * Class LayoutView
+ * the main view that handles the basic surrounding output (like html and body tags)
+ * @package view
+ */
 class LayoutView {
 
-  public function render($isLoggedIn, $viewResponse, DateTimeView $dtv, \model\User $loggedInUser = null) {
+  private $navigationBarView;
 
+  public function __construct(NavigationBarView $navigationBarView) {
+    $this->navigationBarView = $navigationBarView;
+  }
+
+  public function render($pageViewResponse, $pageViewBreadcrumbItems) {
     $navigationView = new \view\NavigationView();
-    $navigationBarView = new \view\NavigationBarView();
-
-    $navigationLink = '';
-    if ($navigationView->onRegisterPage()) { //register page
-      $navigationLink = $navigationView->getLinkToLogin();
-    }
-    else { //login page
-      $navigationLink = $navigationView->getLinkToRegister();
-    }
-
-    //to solve problem with special characters (like åäö) not showing correctly
-    header('Content-Type: text/html; charset=ISO-8859-1');
 
     echo '<!DOCTYPE html>
       <html>
         <head>
           <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
 
           <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
           <link rel="stylesheet" href="styles.css">
 
-          <title>Login Example</title>
+          <title>Project - Checklists</title>
         </head>
         <body>
-          ' . $navigationBarView->response($isLoggedIn, $loggedInUser);
-    /*
-          <h1>Assignment 2</h1>
-          ' . $navigationLink . '
-          ' . $this->renderIsLoggedIn($isLoggedIn) . '
-        */
-    echo '<div class="container">
-              ' . $viewResponse;
+          ' . $this->navigationBarView->response() . '
+          ' . $this->generateMainBodySurroundingBeginningTags() . '
 
-    /*
-              ' . $dtv->show() . '
-    */
-    echo '</div>
+            <ol class="breadcrumb">
+                <li><a href="'. $navigationView->getURLToHomePage() . '">Home</a></li>
+                ' . $pageViewBreadcrumbItems . '
+            </ol>';
+
+    echo $pageViewResponse;
+
+    echo '
+
+          ' . $this->generateMainBodySurroundingEndingTags() . '
          </body>
       </html>
     ';
   }
 
-  private function renderIsLoggedIn($isLoggedIn) {
-    if ($isLoggedIn) {
-      return '<h2>Logged in</h2>';
-    }
-    else {
-      return '<h2>Not logged in</h2>';
-    }
+  private function generateMainBodySurroundingBeginningTags() {
+    return '<div class="tab-content">
+              <div class="container">
+                <div class="row">
+                    <div class="col-md-12">
+                     <section class="panel">';
   }
+  private function generateMainBodySurroundingEndingTags() {
+    return '    </section>
+               </div>
+              </div>
+             </div>
+            </div>';
+  }
+
 }

@@ -3,11 +3,22 @@
 namespace model;
 
 /**
- * CREATE TABLE IF NOT EXISTS `users` (
-    `id` int(11) NOT NULL,
-    `username` varchar(50) NOT NULL,
-    `password_hash` varchar(255) NOT NULL
-    ) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=latin1;
+ * MYSQL table structure:
+
+CREATE TABLE IF NOT EXISTS `users` (
+`id` int(11) NOT NULL,
+`username` varchar(50) NOT NULL,
+`password_hash` varchar(255) NOT NULL,
+`created_at` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+ALTER TABLE `users`
+ADD PRIMARY KEY (`id`),
+ADD UNIQUE KEY `username` (`username`);
+
+ALTER TABLE `users`
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
  */
 
 class UserDAL {
@@ -20,35 +31,6 @@ class UserDAL {
     }
 
     /**
-     * returns all users in the database
-     * @return array|null
-     * @throws \Exception if unexpected error in database
-     */
-    public function getUsers() {
-
-        if ($this->users == null) {
-
-            $this->users = [];
-
-            //select all rows from users table
-            $stmt = $this->database->prepare("SELECT * FROM " . \Settings::DATABASE_TABLE_USERS);
-            if ($stmt === FALSE) {
-                throw new \Exception($this->database->error);
-            }
-
-            $stmt->execute();
-            $stmt->bind_result($id, $username, $passwordHash, $created_at);
-
-            while ($stmt->fetch()) {
-                $user = new User($id, $username, $passwordHash, $created_at);
-                $this->users[] = $user;
-            }
-        }
-
-        return $this->users;
-    }
-
-    /**
      * returns the requested user (if found)
      * @param string $userName
      * @return \model\User | null
@@ -56,15 +38,67 @@ class UserDAL {
      */
     public function getUser($userName) {
         if ($userName != null && $userName != '') {
-            $users = $this->getUsers();
-            foreach ($users as $user) {
-                if ($user->getUserName() == $userName) {
-                    return $user;
-                }
+            $users = $this->doGetUsers($userName);
+            if ($users != null && count($users) === 1) {
+                return $users[0];
             }
         }
-
         return null;
+    }
+    public function getUserById($userId) {
+        $users = $this->doGetUsers(null, $userId);
+        if ($users != null && count($users) === 1) {
+            return $users[0];
+        }
+        return null;
+    }
+    /**
+     * returns all users in the database
+     * @return array|null
+     * @throws \Exception if unexpected error in database
+     */
+    public function getUsers() {
+        $this->users = $this->doGetUsers();
+        return $this->users;
+    }
+    private function doGetUsers($onlyWithUserName = null, $onlyWithUserId = null) {
+        assert($onlyWithUserName == null || is_string($onlyWithUserName));
+        assert($onlyWithUserId == null || is_numeric($onlyWithUserId));
+
+        $users = array();
+
+        //select all rows from users table
+        $whereClause = "";
+        if ($onlyWithUserName != null || $onlyWithUserId != null) {
+            if ($onlyWithUserName != null) {
+                $whereClause = "WHERE username = ?";
+            }
+            else if ($onlyWithUserId != null) {
+                $whereClause = "WHERE id = ?";
+            }
+        }
+        $stmt = $this->database->prepare("SELECT * FROM " . \Settings::DATABASE_TABLE_USERS . "
+                                          " . $whereClause);
+        if ($stmt === FALSE) {
+            throw new \Exception($this->database->error);
+        }
+
+        if ($onlyWithUserName != null) {
+            $stmt->bind_param('s', $onlyWithUserName);
+        }
+        else if ($onlyWithUserId != null) {
+            $stmt->bind_param('i', $onlyWithUserId);
+        }
+
+        $stmt->execute();
+        $stmt->bind_result($id, $username, $passwordHash, $created_at);
+
+        while ($stmt->fetch()) {
+            $user = new User($id, $username, $passwordHash, $created_at);
+            $users[] = $user;
+        }
+
+        return $users;
     }
 
     /**
@@ -87,7 +121,7 @@ class UserDAL {
         $passwordHash = $this->createHashedPassword($credentials->getPassword());
         $stmt->bind_param('ss', $userName, $passwordHash);
 
-        //execute the insert
+        //execute the statement
         $result = $stmt->execute();
         if ($result === FALSE) {
             throw new \Exception($this->database->error);

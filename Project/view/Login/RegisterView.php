@@ -2,7 +2,7 @@
 
 namespace view;
 
-class RegisterView {
+class RegisterView implements PageView {
 
     private static $register = 'RegisterView::Register';
     private static $messageId = 'RegisterView::Message';
@@ -44,7 +44,17 @@ class RegisterView {
             $this->redirectToLoginAfterSuccessfulRegistration($this->getUserName());
         }
 
-        return $this->generateRegisterForm($messages);
+        $html = $this->generateHeader();
+        $html .= $this->generateRegisterForm($messages);
+        return $html;
+    }
+
+    public function responseBreadcrumbSubItems() {
+        $navigationView = new NavigationView();
+        $breadCrumbs = array();
+        $breadCrumbs[] = new BreadcrumbItem('Login', $navigationView->getURLToLogin(), false);
+        $breadCrumbs[] = new BreadcrumbItem('Register', '', true);
+        return $breadCrumbs;
     }
 
     private function redirectToLoginAfterSuccessfulRegistration($registeredUserName) {
@@ -95,6 +105,14 @@ class RegisterView {
         return "";
     }
 
+
+    private function generateHeader() {
+        return '<header class="panel-heading">
+                    <h1>Register</h1>
+                </header>';
+    }
+
+
     /**
      * @param $messages, array of strings
      * @return string
@@ -107,23 +125,29 @@ class RegisterView {
         }
 
         return '
-            <h2>Register new user</h2>
-			<form method="post">
-				<fieldset>
-				<legend>Register a new user - Write username and password</legend>
-					<p id="' . self::$messageId . '">' . $messageHtml . '</p>
-					<label for="' . self::$userName . '">Username :</label>
-					<input type="text" size="20" name="' . self::$userName . '" id="' . self::$userName . '" value="' . strip_tags($this->getUserName()) . '">
-					<br>
-					<label for="' . self::$password . '">Password  :</label>
-					<input type="password" size="20" name="' . self::$password . '" id="' . self::$password . '">
-					<br>
-					<label for="' . self::$passwordRepeat . '">Repeat password  :</label>
-					<input type="password" size="20" name="' . self::$passwordRepeat . '" id="' . self::$passwordRepeat . '">
-					<br>
-					<input id="submit" type="submit" name="' . self::$register . '" value="Register">
-					<br>
-				</fieldset>
-			</form>';
+            <div class="panel-body">
+			  <form method="post">
+
+                <p id="' . self::$messageId . '">' . $messageHtml . '</p>
+
+				<div class="form-group">
+					<label class="control-label" for="' . self::$userName . '">Username</label>
+                    <input type="text" id="' . self::$userName . '" name="' . self::$userName . '" class="form-control" value="' . strip_tags($this->getUserName()) . '" />
+				</div>
+				<div class="form-group">
+					<label class="control-label" for="' . self::$password . '">Password</label>
+                    <input type="password" id="' . self::$password . '" name="' . self::$password . '" class="form-control" />
+				</div>
+				<div class="form-group">
+					<label class="control-label" for="' . self::$passwordRepeat . '">Repeat password</label>
+                    <input type="password" id="' . self::$passwordRepeat . '" name="' . self::$passwordRepeat . '" class="form-control" />
+				</div>
+
+                <button type="submit" name="' . self::$register . '" class="btn btn-default">
+                    Register
+                </button>
+
+              </form>
+            </div>';
     }
 }

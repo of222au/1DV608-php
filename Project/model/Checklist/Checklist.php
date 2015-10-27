@@ -2,25 +2,31 @@
 
 namespace model;
 
+require_once("model/Checklist/ChecklistBase.php");
+require_once("model/EntryAccess/Entry.php");
 require_once("model/Checklist/ChecklistItem.php");
 require_once("model/Checklist/ChecklistItemState.php");
 
-class Checklist implements Entry {
+class Checklist extends ChecklistBase implements Entry {
 
     private $id;
     private $userId;
-    private $title;
-    private $description;
     private $createdAt;
 
-    private $checklistItems = null;
+    private $checklistItems = null; //array of \model\ChecklistItem | null
+    private $user = null;           // \model\User | null
 
     public function __construct($id, $userId, $title, $description, $createdAt) {
+        assert(is_numeric($id));
+        assert(is_numeric($userId));
+
         $this->id = $id;
         $this->userId = $userId;
-        $this->title = $title;
-        $this->description = $description;
+        $this->setTitle($title);
+        $this->setDescription($description);
         $this->createdAt = $createdAt;
+
+        $this->checklistItems = array();
     }
 
     public function getEntryType() {
@@ -33,12 +39,6 @@ class Checklist implements Entry {
     public function getUserId() {
         return $this->userId;
     }
-    public function getTitle() {
-        return $this->title;
-    }
-    public function getDescription() {
-        return $this->description;
-    }
     public function getCreatedAt() {
         return $this->createdAt;
     }
@@ -49,14 +49,38 @@ class Checklist implements Entry {
         //sort them as well
         $this->sortChecklistItems();
     }
+    public function addChecklistItem(ChecklistItem $item) {
+        if ($this->checklistItems == null) { $this->checklistItems = array(); }
+        $this->checklistItems[] = $item;
+    }
     public function getChecklistItems() {
         return $this->checklistItems;
     }
 
+    public function setUser(User $user) {
+        $this->user = $user;
+    }
+    public function getUser() {
+        return $this->user;
+    }
+
+    public function getCheckedCount() {
+        return $this->getItemCountPerStateType(\Settings::CHECKLIST_ITEM_STATE_CHECKED);
+    }
     public function getUncheckedCount() {
+        return $this->getItemCountPerStateType(\Settings::CHECKLIST_ITEM_STATE_UNCHECKED);
+    }
+    public function getArchivedCount() {
+        return $this->getItemCountPerStateType(\Settings::CHECKLIST_ITEM_STATE_ARCHIVED);
+    }
+    public function getNonArchivedCount() {
+        $archivedCount = $this->getArchivedCount();
+        return count($this->checklistItems) - $archivedCount;
+    }
+    private function getItemCountPerStateType($stateType) {
         $count = 0;
         foreach($this->checklistItems as $item) {
-            if ($item->getCurrentStateType() == \Settings::CHECKLIST_ITEM_STATE_UNCHECKED) {
+            if ($item->getCurrentStateType() == $stateType) {
                 $count += 1;
             }
         }
@@ -64,43 +88,55 @@ class Checklist implements Entry {
         return $count;
     }
 
-
-    private function sortChecklistItems() {
-
-        /*
-        $newArray = array();
-        $used = array(count($this->checklistItems));
-        for ($i = 0; $i < count($this->checklistItems); $i++) {
-
-            $nextItem = null;
-            foreach ($this->checklistItems as $item) {
-
-                //compare state type (the \Settings::CHECKLIST_ITEM_STATE_...)
-                $nextItemStateType = ($nextItem != null && $nextItem->getCurrentState() != null ? $nextItem->getCurrentState()->getStateType() : '');
-                $nextItemStateSortPoints = ($nextItemStateType == \Settings::CHECKLIST_ITEM_STATE_UNCHECKED ? 1 : ($nextItemStateType == \Settings::CHECKLIST_ITEM_STATE_CHECKED ? 2 : ($nextItemStateType == \Settings::CHECKLIST_ITEM_STATE_ARCHIVED ? 5 : 3)));
-                $itemStateType = ($item->getCurrentState() != null ? $item->getCurrentState()->getStateType() : '');
-                $itemStateSortPoints = ($itemStateType == \Settings::CHECKLIST_ITEM_STATE_UNCHECKED ? 1 : ($itemStateType == \Settings::CHECKLIST_ITEM_STATE_CHECKED ? 2 : ($itemStateType == \Settings::CHECKLIST_ITEM_STATE_ARCHIVED ? 5 : 3)));
-
-                if ($nextItem == null ||
-                    $itemStateSortPoints > $nextItemStateSortPoints ||
-                    ($itemStateSortPoints == $nextItemStateSortPoints && $item->getUpdatedAt() < $nextItem->getUpdatedAt())) {
-
-                    $nextItem = $item;
-                }
+    public function findChecklistItem($id) {
+        foreach ($this->checklistItems as $item) {
+            if ($item->getId() == $id) {
+                return $item;
             }
-
-            if ($nextItem != null) {
-                throw new \Exception("Sort error in checklist items");
-            }
-
-            $newArray[] = $nextItem;
-            $this->checklistItems[]
         }
-        */
+        return null;
+    }
 
+    public function getChecklistItemsByCurrentStateType($stateType) {
+        $result = array();
+        foreach ($this->checklistItems as $item) {
+            if ($item->getCurrentStateType() == $stateType) {
+                $result[] = $item;
+            }
+        }
+        return $result;
+    }
 
-        usort($this->checklistItems, array("model\\ChecklistItem", "cmp"));
+    public function getTotalCount($calculateIncludingArchived = false) {
+        $itemCount = count($this->getChecklistItems());
+        $uncheckedCount = $this->getUncheckedCount();
+        $checkedCount = $this->getCheckedCount();
 
+        if ($calculateIncludingArchived) {
+            return $itemCount;
+        }
+        else {
+            return ($uncheckedCount + $checkedCount);
+        }
+
+    }
+    public function getDoneCount($calculateIncludingArchived = false) {
+        $itemCount = count($this->getChecklistItems());
+        $uncheckedCount = $this->getUncheckedCount();
+        $checkedCount = $this->getCheckedCount();
+
+        if ($calculateIncludingArchived) {
+            return ($itemCount - $uncheckedCount);
+        }
+        else {
+            return $checkedCount;
+        }
+    }
+
+    public function sortChecklistItems() {
+        if ($this->checklistItems != null) {
+            usort($this->checklistItems, array("model\\ChecklistItem", "cmp"));
+        }
     }
 
 

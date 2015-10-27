@@ -43,7 +43,13 @@ class RegisterModel {
         }
 
         //register the user
-        return $this->userDAL->saveNewUser($credentials);
+        try {
+            $result = $this->userDAL->saveNewUser($credentials);
+            return $result;
+        }
+        catch(\Exception $e) {
+            $this->registerErrors[] = 'Oops.. Something went wrong when trying to save.';
+        }
     }
 
     public function getRegisterErrorMessages() {

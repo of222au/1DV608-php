@@ -5,12 +5,24 @@ class Settings {
     /**
      * The app session name allows different apps on the same server to share a virtual session
      */
-    const APP_SESSION_NAME = "MyLoginApp";
+    const APP_SESSION_NAME = "MyChecklistsApp";
+
+    /**
+     * The language used in for example entry's names etc
+     */
+    const LOCALE = "Swedish";
+
+    /**
+     * Debug mode (Show errors, enable tests page etc.)
+     * boolean true | false
+     */
+    const DEBUG_MODE = true;
 
     /**
      * Path to folder writable by www-data but not accessable by webserver
      */
     const DATA_PATH = "../../data/";
+    const IMAGE_PATH = "../../data/images/";
 
     /**
      * Salt for creating temporary passwords
@@ -22,12 +34,6 @@ class Settings {
      * The time in seconds to accept login by temp credentials (cookies)
      */
     const TEMP_CREDENTIALS_REMEMBER_TIME = 2592000; // 60*60*24*30 = 2592000 seconds = 30 days;
-
-    /**
-     * Show errors
-     * boolean true | false
-     */
-    const DISPLAY_ERRORS = true;
 
     /**
      * Username and password minimum character length
@@ -43,5 +49,40 @@ class Settings {
     const DATABASE_PASSWORD = "";
     const DATABASE_NAME = "";
 
+    /**
+     * These values must be the same as added to the "entry_types" database table
+     */
+    const ENTRY_TYPE_CHECKLIST = "CHECKLIST";
+
+    /**
+     * These values must be the same as added to the "access_types" database table
+     */
+    const ACCESS_TYPE_READ = "READ";
+    const ACCESS_TYPE_WRITE = "WRITE";
+
+    /**
+     * These values must be the same as added to the "checklist_item_states" database table
+     */
+    const CHECKLIST_ITEM_STATE_UNCHECKED = "UNCHECKED";
+    const CHECKLIST_ITEM_STATE_CHECKED = "CHECKED";
+    const CHECKLIST_ITEM_STATE_ARCHIVED = "ARCHIVED";
+    const CHECKLIST_ITEM_STATE_DEFAULT_WHEN_NO_STATE = "UNCHECKED"; //this is one should be the same as any of the above states (is used before any state is set to a checklist item)
+
+    /**
+     * Database table names
+     */
+    const DATABASE_TABLE_USERS = "users";
+    const DATABASE_TABLE_USER_GROUPS = "user_groups";
+    const DATABASE_TABLE_USER_GROUP_MEMBERS = "user_group_members";
+    const DATABASE_TABLE_ENTRY_TYPES = "entry_types";
+    const DATABASE_TABLE_ACCESS_TYPES = "access_types";
+    const DATABASE_TABLE_ENTRIES = "entries";
+    const DATABASE_TABLE_ENTRY_USER_GROUP_ACCESSES = "entry_user_group_accesses";
+    const DATABASE_TABLE_GALLERIES = "galleries";
+    const DATABASE_TABLE_IMAGES = "images";
+    const DATABASE_TABLE_CHECKLISTS = "checklists";
+    const DATABASE_TABLE_CHECKLIST_ITEMS = "checklist_items";
+    const DATABASE_TABLE_CHECKLIST_ITEM_STATES = "checklist_item_states";
+    const DATABASE_TABLE_CHECKLIST_ITEM_STATE_TYPES = "checklist_item_state_types";
 
 }

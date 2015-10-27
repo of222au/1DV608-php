@@ -1,45 +1,289 @@
 body {
-    /* background-color: #EEEEEE; */
+    background: url('img/background.png');
+    background-repeat: repeat;
 }
 
 
 /* ### ENTRY ACCESS VIEW ### */
-.entry-shared-with {
-    padding: 10px 0;
+.entry-shared-with ul {
+    display: inline;
+    padding: 0;
 }
 .entry-shared-with li {
     list-style-type: none;
-
+    display: inline;
+    margin-right: 8px;
+}
+.entry-shared-with li span:first-of-type button {
+    padding-right: 10px;
+}
+.entry-shared-with .form-inline,
+.entry-shared-with div,
+.entry-shared-with button,
+.entry-shared-with span {
+    display: inline;
 }
 
-/* ### CHECKLIST ### */
-.checklist-footer {
-    background-color: #F4FCE8;
-    margin: 20px -15px 0px -15px; /* 0 -20px -10px -20px; */
+select.btn-sm {
+    height: auto;
+}
+
+
+/** #### LABEL-GROUP #### **/
+.label-group {
+    display: inline;
+}
+.label-group > .label,
+.user-date-label > .label{
+    padding: .2em .3em .2em .3em;
+    font-size: 90%;
+}
+.label-group .label a {
+    text-decoration: none;
+    color: inherit;
+}
+.label-group > .label:not(:first-child),
+.user-date-label > .label:not(:first-child){
+    padding-left: 0.8em;
+    padding-right: 0.4em;
+}
+.label-group > .label.label-with-button {
+    padding-left: 0.2em;
+    padding-right: 0;
+}
+.label-group > .label.label-with-button button {
+    border: 0;
+    line-height: 1;
+    padding-top: 0;
+}
+.label-group > .label:first-child,
+.user-date-label > .label:first-child {
+    padding-left: 0.6em;
+}
+
+.label-group > .label:not(:last-child) {
+    /* border-right: 1px solid #aaa; */
+}
+.label-group > .label:not(:last-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.label-group > .label:not(:first-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+
+section.panel {
+    border: none;
+    min-height: 300px;
+}
+.navbar-default {
+    /* background-color: #fafafa; */
+}
+.input-group-addon, .input-group-btn, .input-group .form-control {
+    width: auto;
+}
+.input-group-addon:not(:first-child):not(:last-child) .btn,
+.input-group-btn:not(:first-child):not(:last-child) .btn,
+.input-group .form-control:not(:first-child):not(:last-child) .btn {
+    border-radius: 0px;
+}
+
+.pull-top-right {
+    float: right!important;
+    margin-top: 20px;
+}
+
+.alert {
+    margin-top: 10px;
+}
+
+.form-title {
+    display: block;
+    font-size: 12px;
+    font-weight: normal;
+    color: #959595;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    padding-left: 5px;
+}
+
+.div-with-button {
+    padding-top: 8px;
+    padding-bottom: 15px;
+}
+
+.no-entries {
+    color: #999;
+}
+.list-title {
+    display: block;
+    font-size: 12px;
+    color: #959595;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+.list-title:not(:first-of-type) {
+    margin-top: 30px;
+}
+
+.has-error label.control-label {
+    margin-top: 10px;
+}
+.panel-heading {
+    border-color: #eff2f7;
     padding: 10px 20px;
 }
-.checklist-footer .bottom-info {
-    padding-top: 6px;
+.panel-heading .panel-title a:first-of-type {
+    padding-top: 5px;
 }
 
-.checklist-container {
-    /* background-color: white; */
+.task-list,
+.content-main {
+    margin-bottom: 20px;
+}
+.task-list > li {
+    position: relative;
+    padding: 10px 5px;
+    border-bottom: 1px dashed #eaeaea;
+}
+.task-list.task-list-small > li {
+    padding: 5px 3px;
+}
+.task-list > li:last-of-type {
+    border-bottom: 0;
+}
+.task-list li .task-checkbox {
+    display: inline;
+}
+li .task-title {
+    overflow: hidden;
+    margin-right: 10px;
+    display: inline;
+}
+li .task-title .input-group {
+    display: inline;
+}
+li .task-title .input-group .input-group-addon.label {
+    border: 0;
+}
+.task-list li .user-icon,
+.user-date-label {
+    margin-left: 5px;
+    margin-right: 10px;
+    display: inline;
+}
+.task-list li .user-icon {
+    margin-top: 2px;
+}
+.task-list li.task-archived .user-icon {
+    display: none;
+}
+.task-list li .user-icon.label-default,
+.user-date-label .label-default {
+    background-color: #bbb;
+}
+.user-date-label .user-label.is-someone-else {
+    color: #666;
+}
+.user-date-label .user-label {
+    margin-right: 3px;
+}
+.user-date-label > .label a {
+    color: inherit;
+    text-decoration: none;
 }
 
-.checkbox small {
-    color: #A8A8A8;
+li .task-title .label-default:not(.label-today),
+li.task-archived .task-title .label {
+    font-weight: normal;
+}
+.task-list li.task-archived .label {
+    background-color: #ccc;
+}
+li .task-title .task-title-sp {
+    margin-right: 2px;
+}
+li .task-description {
+    color: #999;
 }
 
-li.ui-state-default {
-    border: none;
-    border-bottom: 1px solid #ddd;
+li .date-label:not(.label) {
+    padding: .2em .6em .3em;
 }
-li.ui-state-default:last-child {
-    border-bottom: none;
+li .date-label {
+    margin-right: 6px;
 }
-li.ui-state-done {
-    padding: 10px 0;
-    border-bottom: 1px solid #ddd;
-    /* text-decoration: line-through; */
+li.task-important .task-title-sp {
+    font-weight: bold;
+}
+.task-list li.task-done {
+    background: #f8f8f8;
+}
+.task-list li:not(.task-done):hover {
+    background-color: #fcfcfc;
+}
+li.task-done .task-title-sp {
+    text-decoration: line-through;
+    color: #bbbbbb;
+}
+li.task-archived {
+    opacity: 0.7;
+}
+
+.task-list .task-buttons {
+    display: inline;
+    margin-right: 5px;
+}
+.task-list .task-buttons button {
+    margin-left: 5px;
+}
+.save-panel {
+    margin-top: 10px;
+}
+.save-panel label.control-label {
+    display: block;
+    margin-top: 6px;
+}
+.save-panel span {
+    display: inline;
+}
+.save-panel input {
+    margin-top: 6px;
+}
+
+.action-buttons {
+    float: right;
+    margin-top: 6px;
+}
+.action-buttons:after {
+    clear: both;
+}
+.action-buttons button {
+    margin-left: 5px;
+    margin-top: 4px;
+}
+
+.panel-add {
+    padding: 15px;
+    padding-bottom: 0;
+}
+.panel-add .visible-xs {
+    padding-bottom: 15px;
+}
+.panel-status {
+    padding: 10px 15px;
+    background-color: #f6f6f6;
+    border-top: 1px solid #ddd;
+}
+.panel-status .progress {
+    margin-bottom: 10px;
+    background-color: #f7f7f7;
+}
+.panel-status .progress-bar {
+    background-color: #e9e9e9;
 }
 

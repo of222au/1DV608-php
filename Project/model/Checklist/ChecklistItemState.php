@@ -7,9 +7,9 @@ class ChecklistItemState {
     private $id;
     private $checklistItemId;
     private $userId;
-    //private $stateTypeId;
     private $stateType; //string, one of the \Settings::CHECKLIST_ITEM_STATE_...
     private $createdAt;
+    private $userName; //read from the user
 
     public function __construct($id, $checklistItemId, $userId, $stateType, $createdAt) {
         assert(is_numeric($id));
@@ -32,6 +32,9 @@ class ChecklistItemState {
     }
     public function getUserId() {
         return $this->userId;
+    }
+    public function getUserName() {
+        return $this->userName;
     }
     public function getStateType() {
         return $this->stateType;

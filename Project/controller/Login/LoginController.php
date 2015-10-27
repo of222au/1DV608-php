@@ -2,17 +2,14 @@
 
 namespace controller;
 
-class LoginController {
+class LoginController implements SubController {
 
     private $view;
     private $model;
 
-    private $generalView;
-
-    public function __construct(\model\LoginModel $model, \view\LoginView $view) { // \view\GeneralView $generalView) {
+    public function __construct(\model\LoginModel $model, \view\LoginView $view) {
         $this->model = $model;
         $this->view = $view;
-        $this->generalView = new \view\GeneralView(); // $generalView;
     }
 
     public function doControl() {
@@ -40,5 +37,8 @@ class LoginController {
         $this->model->renewTempCredentials($userClient);
     }
 
+    public function getView() {
+        return $this->view;
+    }
 }
 

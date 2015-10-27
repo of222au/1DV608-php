@@ -2,14 +2,14 @@
 
 namespace controller;
 
-class RegisterController {
+class RegisterController implements SubController {
 
     private $view;
     private $model;
 
-    public function __construct(\model\RegisterModel $model, \view\RegisterView $view) {
-        $this->model = $model;
-        $this->view = $view;
+    public function __construct(\model\UserDAL $userDAL) {
+        $this->model =  new \model\RegisterModel($userDAL);
+        $this->view = new \view\RegisterView($this->model);
     }
 
     public function doControl() {
@@ -30,6 +30,10 @@ class RegisterController {
                 $this->view->setRegisterHasFailed();
             }
         }
+    }
+
+    public function getView() {
+        return $this->view;
     }
 }
 

@@ -2,7 +2,8 @@
 
 namespace view;
 
-class LoginView {
+class LoginView implements PageView {
+
 	private static $login = 'LoginView::Login';
 	private static $logout = 'LoginView::Logout';
 	private static $name = 'LoginView::UserName';
@@ -14,6 +15,7 @@ class LoginView {
 
 	private static $sessionMessageLocation = 'view\\LoginView\\message';
 
+	private $navigationView;
 	private $cookieStorage;
 
 	private $loginHasSucceeded = false;
@@ -26,6 +28,7 @@ class LoginView {
 	private $model;
 
 	public function __construct(\model\LoginModel $model) {
+		$this->navigationView = new NavigationView();
 		$this->cookieStorage = new CookieStorage();
 
 		$this->model = $model;
@@ -46,18 +49,24 @@ class LoginView {
 	}
 
 	public function response() {
-
+		$html = $this->generateHeader();
 		if ($this->model->isLoggedIn($this->getUserClient())) {
-			return $this->doLogoutForm();
+			$html .= $this->doLogoutForm();
 		}
 		else {
-			return $this->doLoginForm();
+			$html .= $this->doLoginForm();
 		}
+		return $html;
+	}
+
+	public function responseBreadcrumbSubItems() {
+		$breadCrumbs = array();
+		$breadCrumbs[] = new BreadcrumbItem('Login', '', true);
+		return $breadCrumbs;
 	}
 
 	private function doLoginForm() {
 
-		$message = "";
 		if ($this->registerDone === true) {
 			$message = "Registered new user.";
 		}
@@ -77,7 +86,7 @@ class LoginView {
 		}
 		else if ($this->wantToLogOut() && $this->userLoggedOut) {
 			$message = "Bye bye!";
-			$this->redirect($message);
+			$this->redirect($message, $this->navigationView->getURLToHomePage());
 		}
 		else {
 			$message = $this->getSessionMessage();
@@ -118,10 +127,13 @@ class LoginView {
 		return $this->generateLogoutButtonHTML($message);
 	}
 
-	private function redirect($message) {
+	private function redirect($message, $url = '') {
 
 		$_SESSION[self::$sessionMessageLocation] = $message;
-		header('Location: ' . $_SERVER['PHP_SELF']);
+		if ($url == '') {
+			$url = $_SERVER['PHP_SELF'];
+		}
+		header('Location: ' . $url);
 	}
 
 
@@ -150,7 +162,7 @@ class LoginView {
 			   isset($_COOKIE[self::$cookieName]);
 	}
 	public function wantToLogOut() {
-		return isset($_POST[self::$logout]);
+		return $this->navigationView->onLogoutPage(); //isset($_POST[self::$logout]);
 	}
 
 	private function getRequestUserName() {
@@ -217,6 +229,13 @@ class LoginView {
 
 
 
+	private function generateHeader() {
+		return '<header class="panel-heading">
+                    <h1>Login</h1>
+                </header>';
+	}
+
+
 	/**
 	 * Generate HTML code on the output buffer for the logout button
 	 * @param $message, String output message
@@ -238,24 +257,67 @@ class LoginView {
 	 */
 	private function generateLoginFormHTML($message) {
 		return '
-			<form method="post" >
-				<fieldset>
-					<legend>Login - enter Username and password</legend>
-					<p id="' . self::$messageId . '">' . $message . '</p>
+			<div class="panel-body">
 
-					<label for="' . self::$name . '">Username :</label>
-					<input type="text" id="' . self::$name . '" name="' . self::$name . '" value="'. $this->getRequestUserName() . '" />
+			  <form method="post" class="form-horizontal">
+				<p id="' . self::$messageId . '">' . $message . '</p>
 
-					<label for="' . self::$password . '">Password :</label>
-					<input type="password" id="' . self::$password . '" name="' . self::$password . '" />
+				<div class="form-group">
+					<label class="col-sm-2 control-label" for="' . self::$name . '">Username</label>
+					<div class="col-sm-10">
+						<input type="text" id="' . self::$name . '" name="' . self::$name . '" class="form-control" value="'. $this->getRequestUserName() . '" />
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label" for="' . self::$password . '">Password</label>
+					<div class="col-sm-10">
+						<input type="password" id="' . self::$password . '" name="' . self::$password . '" class="form-control" />
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-sm-offset-2 col-sm-10">
+						<label>
+							<input type="checkbox" id="' . self::$keep . '" name="' . self::$keep . '" /> Remember me
+						</label>
+					</div>
+				</div>
 
-					<label for="' . self::$keep . '">Keep me logged in  :</label>
-					<input type="checkbox" id="' . self::$keep . '" name="' . self::$keep . '" />
+				<div class="form-group">
+					<div class="col-sm-offset-2 col-sm-10">
+						<button type="submit" name="' . self::$login . '" class="btn btn-default">
+							Login
+						</button>
+					</div>
+				</div>
+			  </form>
 
-					<input type="submit" name="' . self::$login . '" value="login" />
-				</fieldset>
-			</form>
+			  <div>
+			  	<p>
+			  		<a href="' . $this->navigationView->getURLToRegister() . '">
+						Register a new user
+			  		</a>
+			  	</p>
+			  </div>
+		  	</div>
 		';
+	}
+
+	public function generateOutputForNavigationBar(\model\User $loggedInUser = null) {
+
+		$html = '<ul class="nav navbar-nav navbar-right">';
+
+		if ($this->model->isLoggedIn($this->getUserClient())) {
+            $html .= '<li>' . ($loggedInUser != null ? '<a href="' . $this->navigationView->getURLToUser($loggedInUser) . '">' : '') . '<span class="glyphicon glyphicon-user"></span> ' . $this->model->loggedInUserName($this->getUserClient()) . ($loggedInUser != null ? '</a>' : '') . '</li>
+                        <li><a href="' . $this->navigationView->getURLToLogout() . '">Log out</a></li>';
+        }
+        else {
+            $html .= '<li><a href="' . $this->navigationView->getURLToLogin() . '">Log in</a></li>
+					  <li><a href="' . $this->navigationView->getURLToRegister() . '">Register</a></li>';
+        }
+
+        $html .= '</ul>';
+
+		return $html;
 	}
 
 }

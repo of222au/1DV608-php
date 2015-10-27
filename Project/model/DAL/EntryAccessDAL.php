@@ -2,7 +2,38 @@
 
 namespace model;
 
-class EntryAccessDAL {
+/**
+ * MYSQL table structure:
+
+CREATE TABLE IF NOT EXISTS `entry_user_group_accesses` (
+`id` int(11) NOT NULL,
+`entry_id` int(11) NOT NULL,
+`user_group_id` int(11) NOT NULL,
+`access_type_id` int(11) NOT NULL,
+`user_id` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+ALTER TABLE `entry_user_group_accesses`
+ADD PRIMARY KEY (`id`);
+
+ALTER TABLE `entry_user_group_accesses`
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+ ** access_types
+
+CREATE TABLE IF NOT EXISTS `access_types` (
+`id` int(11) NOT NULL,
+`name` varchar(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+ALTER TABLE `access_types`
+ADD PRIMARY KEY (`id`);
+
+ALTER TABLE `access_types`
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+ */
+
+class EntryAccessDAL extends GeneralDAL {
 
     private $database;
 
@@ -10,22 +41,102 @@ class EntryAccessDAL {
         $this->database = $db;
     }
 
+    /**
+     * Retrieves all entries (like checklists) that the user has access to
+     * @param User $user
+     * @param null $onlyOfEntryTypes  //array of \Settings::ENTRY_TYPE_...
+     * @return array of \model\EntryRawInfo
+     * @throws \Exception
+     */
+    public function getAllEntriesUserHasAccessTo(User $user, $onlyOfEntryTypes = null) {
+        assert($onlyOfEntryTypes == null || is_array($onlyOfEntryTypes));
+
+        $entriesArray = array();
+
+        $useSpecificEntryTypes = ($onlyOfEntryTypes != null && count($onlyOfEntryTypes));
+
+        //get a list of user groups with access type for this user and entry
+        $stmt = $this->database->prepare("SELECT entry_type_id, entry_type_name, entry_specific_id
+                                            FROM
+                                            (
+                                              SELECT e.entry_type_id, et.name AS 'entry_type_name', e.entry_specific_id
+                                                    FROM " . \Settings::DATABASE_TABLE_ENTRIES . " AS e
+                                                    LEFT JOIN " . \Settings::DATABASE_TABLE_ENTRY_USER_GROUP_ACCESSES . " AS eua ON e.id = eua.entry_id
+                                                    LEFT JOIN " . \Settings::DATABASE_TABLE_USER_GROUPS . " AS ug ON eua.user_group_id = ug.id
+                                                    LEFT JOIN " . \Settings::DATABASE_TABLE_USER_GROUP_MEMBERS . " AS ugm ON ug.id = ugm.user_group_id
+                                                    LEFT JOIN " . \Settings::DATABASE_TABLE_USERS . " AS u ON ugm.user_id = u.id
+                                                    LEFT JOIN " . \Settings::DATABASE_TABLE_ENTRY_TYPES . " AS et ON e.entry_type_id = et.id
+                                                    WHERE (ugm.user_id = ? OR ug.user_id = ?)
+                                                        " . ($useSpecificEntryTypes ? " AND et.name " . $this->getStatementINQuestionMarks($onlyOfEntryTypes) : "") . "
+                                            UNION ALL
+                                                SELECT e.entry_type_id, et.name AS 'entry_type_name', e.entry_specific_id
+                                                    FROM " . \Settings::DATABASE_TABLE_ENTRIES . " AS e
+                                                    LEFT JOIN " . \Settings::DATABASE_TABLE_USERS . " AS u ON e.user_id = u.id
+                                                    LEFT JOIN " . \Settings::DATABASE_TABLE_ENTRY_TYPES . " AS et ON e.entry_type_id = et.id
+                                                    WHERE (e.user_id = ?)
+                                                        " . ($useSpecificEntryTypes ? " AND et.name " . $this->getStatementINQuestionMarks($onlyOfEntryTypes) : "") . "
+                                            ) results
+                                            GROUP BY entry_type_id, entry_type_name, entry_specific_id");
+
+        if ($stmt === FALSE) {
+            throw new \Exception($this->database->error);
+        }
+
+        //bind parameters
+        $userId = $user->getId();
+        $params = array();
+        $params[] = 'ii' . ($useSpecificEntryTypes ? $this->getBindParamINParamTypes($onlyOfEntryTypes, 's') : '') . 'i' . ($useSpecificEntryTypes ? $this->getBindParamINParamTypes($onlyOfEntryTypes, 's') : '');
+
+        $params[] = $userId;
+        $params[] = $userId;
+        if ($useSpecificEntryTypes) {
+            foreach($onlyOfEntryTypes as $entryType) {
+                $params[] = $entryType;
+            }
+        }
+        $params[] = $userId;
+        if ($useSpecificEntryTypes) {
+            foreach($onlyOfEntryTypes as $entryType) {
+                $params[] = $entryType;
+            }
+        }
+        call_user_func_array(array($stmt, 'bind_param'), $this->makeValuesReferenced($params));
+
+        //execute statement
+        $stmt->execute();
+        $stmt->bind_result($entry_type_id, $entry_type_name, $entry_specific_id);
+
+        while ($stmt->fetch()) {
+
+            $entryRawInfo = new \model\EntryRawInfo($entry_type_name, $entry_specific_id, $user->getId());
+            $entriesArray[] = $entryRawInfo;
+        }
+
+        return $entriesArray;
+    }
+
     public function getAccessToEntry(Entry $entry, User $user) {
 
         $accesses = array();
 
         //get a list of user groups with access type for this user and entry
-        $stmt = $this->database->prepare("SELECT ug.id AS 'user_group_id', act.name AS 'access_type_name' FROM " . \Settings::DATABASE_TABLE_ENTRY_USER_GROUP_ACCESSES . " AS eua
+        $stmt = $this->database->prepare("SELECT ug.id AS 'user_group_id', act.name AS 'access_type_name'
+                                            FROM " . \Settings::DATABASE_TABLE_ENTRIES . " AS e
+                                            LEFT JOIN " . \Settings::DATABASE_TABLE_ENTRY_USER_GROUP_ACCESSES . " AS eua ON e.id = eua.entry_id
                                             LEFT JOIN " . \Settings::DATABASE_TABLE_USER_GROUPS . " AS ug ON eua.user_group_id = ug.id
                                             LEFT JOIN " . \Settings::DATABASE_TABLE_USER_GROUP_MEMBERS . " AS ugm ON ug.id = ugm.user_group_id
-                                            LEFT JOIN " . \Settings::DATABASE_TABLE_ENTRY_TYPES . " AS et ON eua.entry_type_id = et.id
                                             LEFT JOIN " . \Settings::DATABASE_TABLE_ACCESS_TYPES . " AS act ON eua.access_type_id = act.id
-                                            WHERE ugm.user_id = " . $user->getId() . "
-                                                AND et.name = '" . $entry->getEntryType() . "'
-                                                AND eua.entry_id = " . $entry->getId());
+                                            WHERE (ugm.user_id = ? OR ug.user_id = ?)
+                                                AND eua.entry_id = (SELECT id FROM " . \Settings::DATABASE_TABLE_ENTRIES . "
+                                                                        WHERE entry_type_id = (SELECT id FROM " . \Settings::DATABASE_TABLE_ENTRY_TYPES . " WHERE name = ?) AND entry_specific_id = ?)");
         if ($stmt === FALSE) {
             throw new \Exception($this->database->error);
         }
+
+        $userId = $user->getId();
+        $entryTypeName = $entry->getEntryType();
+        $entrySpecificId = $entry->getId();
+        $stmt->bind_param("iisi", $userId, $userId, $entryTypeName, $entrySpecificId);
 
         $stmt->execute();
         $stmt->bind_result($user_group_id, $access_type_name);
@@ -46,116 +157,98 @@ class EntryAccessDAL {
         return $bestAccess;
     }
 
+    /**
+     * Gets all the user groups that has access to the entry
+     * @param Entry $entry
+     * @return array of \model\EntryUserGroupAccess
+     * @throws \Exception
+     */
     public function getUserGroupAccessesToEntry(Entry $entry) {
 
         $userGroupAccesses = array();
 
         //get a list of user groups with access type for this user and entry
-        $stmt = $this->database->prepare("SELECT ug.id AS 'user_group_id', ug.name AS 'user_group_name', act.name AS 'access_type_name' FROM " . \Settings::DATABASE_TABLE_ENTRY_USER_GROUP_ACCESSES . " AS eua
+        $stmt = $this->database->prepare("SELECT ug.id AS 'user_group_id', ug.user_id AS 'user_group_user_id', ug.name AS 'user_group_name', ug.created_at AS 'user_group_created_at', act.name AS 'access_type_name'
+                                            FROM " . \Settings::DATABASE_TABLE_ENTRIES . " AS e
+                                            LEFT JOIN " . \Settings::DATABASE_TABLE_ENTRY_USER_GROUP_ACCESSES . " AS eua ON e.id = eua.entry_id
                                             LEFT JOIN " . \Settings::DATABASE_TABLE_USER_GROUPS . " AS ug ON eua.user_group_id = ug.id
-                                            LEFT JOIN " . \Settings::DATABASE_TABLE_ENTRY_TYPES . " AS et ON eua.entry_type_id = et.id
                                             LEFT JOIN " . \Settings::DATABASE_TABLE_ACCESS_TYPES . " AS act ON eua.access_type_id = act.id
-                                            WHERE et.name = '" . $entry->getEntryType() . "'
-                                                AND eua.entry_id = " . $entry->getId());
+                                            WHERE eua.entry_id = (SELECT id FROM " . \Settings::DATABASE_TABLE_ENTRIES . "
+                                                                        WHERE entry_type_id = (SELECT id FROM " . \Settings::DATABASE_TABLE_ENTRY_TYPES . " WHERE name = ?) AND entry_specific_id = ?)");
         if ($stmt === FALSE) {
             throw new \Exception($this->database->error);
         }
 
+        $entryTypeName = $entry->getEntryType();
+        $entrySpecificId = $entry->getId();
+        $stmt->bind_param("si", $entryTypeName, $entrySpecificId);
+
         $stmt->execute();
-        $stmt->bind_result($user_group_id, $user_group_name, $access_type_name);
+        $stmt->bind_result($user_group_id, $user_group_user_id, $user_group_name, $user_group_created_at, $access_type_name);
 
         while ($stmt->fetch()) {
-            $userGroupAccesses[] =  new EntryUserGroupAccess($user_group_id, $user_group_name, $access_type_name);
+            $userGroup = new UserGroup($user_group_id, $user_group_user_id, $user_group_name, $user_group_created_at);
+            $userGroupAccesses[] = new EntryUserGroupAccess($userGroup, $access_type_name);
         }
 
         return $userGroupAccesses;
     }
 
-    public function getUserGroupsWithUser(User $user) {
-
-        $userGroups = array();
-
-        //select all rows from table where
-        $stmt = $this->database->prepare("SELECT * FROM " . self::$table_user_groups . " AS ug
-                                            LEFT JOIN " . self::$table_user_group_members . " AS ugm ON ug.id = ugm.user_group_id
-                                            WHERE ugm.user_id = " . $user->getId());
-        if ($stmt === FALSE) {
-            throw new \Exception($this->database->error);
-        }
-
-        $stmt->execute();
-        $stmt->bind_result($id, $user_id, $name, $createdAt);
-
-        while ($stmt->fetch()) {
-            $userGroup = new UserGroup($id, $user_id, $name, $createdAt);
-            $userGroups[] = $userGroup;
-        }
-
-        return $userGroups;
-    }
-
-    public function saveNewUserGroup($name) {
+    public function saveNewUserGroupAccessToEntry(EntryUserGroupAccessAddCredentials $credentials, User $user) {
 
         //prepare the database statement
-        $stmt = $this->database->prepare("INSERT INTO " . self::$table_user_groups . "
-                                            (name, created_at)
-                                            VALUES (?, NOW())");
+        $stmt = $this->database->prepare("INSERT INTO " . \Settings::DATABASE_TABLE_ENTRY_USER_GROUP_ACCESSES . "
+                                            (entry_id, user_group_id, access_type_id, user_id)
+                                            VALUES ((SELECT id FROM " . \Settings::DATABASE_TABLE_ENTRIES . "
+                                                        WHERE entry_type_id = (SELECT id FROM " . \Settings::DATABASE_TABLE_ENTRY_TYPES . " WHERE name = ?) AND entry_specific_id = ?),
+                                                    ?,
+                                                    (SELECT id FROM " . \Settings::DATABASE_TABLE_ACCESS_TYPES . " WHERE name = ?),
+                                                    ?)");
         if ($stmt === FALSE) {
             throw new \Exception($this->database->error);
         }
 
         //set values
-        $stmt->bind_param('s', $name);
+        $entryType = $credentials->getEntryType();
+        $entrySpecificId = $credentials->getEntrySpecificId();
+        $userGroupId = $credentials->getUserGroupId();
+        $accessType = $credentials->getAccessType();
+        $userId = $user->getId();
 
-        //execute the insert
+        $stmt->bind_param('siisi', $entryType, $entrySpecificId, $userGroupId, $accessType, $userId);
+
+        //execute the statement
         $result = $stmt->execute();
         if ($result === FALSE) {
             throw new \Exception($this->database->error);
         }
-        else {
-            return $this->database->insert_id();
-        }
     }
 
-    public function saveNewUserGroupMember(UserGroup $group, User $user) {
-        return $this->addOrRemoveUserFromGroup(true, $group, $user);
-    }
-
-    public function removeUserGroupMember(UserGroup $group, User $user) {
-        return $this->addOrRemoveUserFromGroup(false, $group, $user);
-    }
-
-    private function addOrRemoveUserFromGroup($addNotRemove, UserGroup $group, User $user) {
-        assert($group != null && $group->getId() > 0);
-        assert($user != null && $user->getId() > 0);
+    public function deleteUserGroupAccessToEntry(EntryUserGroupAccessRemoveCredentials $credentials) {
 
         //prepare the database statement
-        $statement = '';
-        if ($addNotRemove) {
-            $statement = "INSERT INTO " . self::$table_user_group_members . "
-                                            (user_group_id, user_id, created_at)
-                                            VALUES (?, ?, NOW())";
-        }
-        else {
-            $statement = "DELETE FROM " . self::$table_user_group_members . "
-                                            WHERE user_group_id = ? AND user_id = ?";
-        }
-        $stmt = $this->database->prepare($statement);
+        $stmt = $this->database->prepare("DELETE FROM " . \Settings::DATABASE_TABLE_ENTRY_USER_GROUP_ACCESSES . "
+                                            WHERE entry_id = (SELECT id FROM " . \Settings::DATABASE_TABLE_ENTRIES . "
+                                                                WHERE entry_type_id = (SELECT id FROM " . \Settings::DATABASE_TABLE_ENTRY_TYPES . " WHERE name = ?) AND entry_specific_id = ?)
+                                              AND user_group_id = ?");
         if ($stmt === FALSE) {
             throw new \Exception($this->database->error);
         }
 
         //set values
-        $stmt->bind_param('ii', $group->getId(), $user->getId());
+        $entryType = $credentials->getEntryType();
+        $entryId = $credentials->getEntryId();
+        $userGroupId = $credentials->getUserGroupId();
 
-        //execute the insert
+        $stmt->bind_param('sii', $entryType, $entryId, $userGroupId);
+
+        //execute the statement
         $result = $stmt->execute();
         if ($result === FALSE) {
             throw new \Exception($this->database->error);
         }
-
-        return true;
     }
+
 
     
 

@@ -2,79 +2,78 @@
 
 namespace view;
 
+/**
+ * Class NavigationBarView
+ * handles output of the navigation bar on top of the page
+ * @package view
+ */
 class NavigationBarView {
 
-    public function response($isLoggedIn, \model\User $loggedInUser = null) {
+    private $loginView;
+    private $navigationView;
+    private $isLoggedIn;
+    private $loggedInUser;
 
+    public function __construct(LoginView $loginView, $isLoggedIn, \model\User $loggedInUser = null) {
+        $this->loginView = $loginView;
+        $this->navigationView = new NavigationView();
+        $this->isLoggedIn = $isLoggedIn;
+        $this->loggedInUser = $loggedInUser;
+    }
+
+    public function response() {
+        $isOnTabHome = false;
+        $isOnTabChecklists = false;
+        $isOnTabUserGroups = false;
+        $isOnTabTests = false;
+        if ($this->navigationView->onHomePage()) {
+            $isOnTabHome = true;
+        }
+        else if ($this->navigationView->onChecklistPage() || $this->navigationView->onChecklistsPage()) {
+            $isOnTabChecklists = true;
+        }
+        else if ($this->navigationView->onUserGroupsPage() || $this->navigationView->onUserGroupPage() ||
+            $this->navigationView->onUserPage()) {
+            $isOnTabUserGroups = true;
+        }
+        else if ($this->navigationView->onTestsPage()) {
+            $isOnTabTests = true;
+        }
+
+        //TODO: better mobile menu when javascript is allowed to use..
         $html = '
         <nav class="navbar navbar-default">
-  <div class="container-fluid">
-    <!-- Brand and toggle get grouped for better mobile display -->
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="?">Project</a>
-    </div>
+          <div class="container">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              <a class="navbar-brand" href="?">Project</a>
+            </div>
 
-    <!-- Collect the nav links, forms, and other content for toggling -->
-    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
 
-        <ul class="nav navbar-nav navbar-right">';
+                <ul class="nav navbar-nav navbar-left">
+                  <li' . ($isOnTabHome ? ' class="active"' : '') . '><a href="' . $this->navigationView->getURLToHomePage() . '"><span class="glyphicon glyphicon-home"></span> Home</a></li>';
 
-        if ($isLoggedIn) {
-            $html .= '<li><a href="#"><span class="glyphicon glyphicon-user"></span> ' . $loggedInUser->getUsername() . '</a></li>
-                        <li><a href="#">Log out</a></li>';
+        if ($this->isLoggedIn) {
+            $html .= '<li' . ($isOnTabChecklists ? ' class="active"' : '') . '><a href="' . $this->navigationView->getURLToChecklists() . '"><span class="glyphicon glyphicon-edit"></span> Checklists</a></li>
+                      <li' . ($isOnTabUserGroups ? ' class="active"' : '') . '><a href="' . $this->navigationView->getURLToUserGroups() . '"><span class="glyphicon glyphicon-link"></span> User groups</a></li>';
         }
-        else {
-            $html .= '<li><a href="#">Log in</a></li>';
+        if (\Settings::DEBUG_MODE && $this->isLoggedIn) {
+            $html .= '    <li' . ($isOnTabTests ? ' class="active"' : '') . '><a href="' . $this->navigationView->getURLToTestsPage() . '"><span class="glyphicon glyphicon-flash"></span> Tests (debug mode)</a></li>';
         }
-
-        $html .= '</ul>';
-    /**
-      <ul class="nav navbar-nav">
-        <li class="active"><a href="#">Link <span class="sr-only">(current)</span></a></li>
-        <li><a href="#">Link</a></li>
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
-          <ul class="dropdown-menu">
-            <li><a href="#">Action</a></li>
-            <li><a href="#">Another action</a></li>
-            <li><a href="#">Something else here</a></li>
-            <li role="separator" class="divider"></li>
-            <li><a href="#">Separated link</a></li>
-            <li role="separator" class="divider"></li>
-            <li><a href="#">One more separated link</a></li>
-          </ul>
-        </li>
-      </ul>
-      <form class="navbar-form navbar-left" role="search">
-        <div class="form-group">
-          <input type="text" class="form-control" placeholder="Search">
-        </div>
-        <button type="submit" class="btn btn-default">Submit</button>
-      </form>
-      <ul class="nav navbar-nav navbar-right">
-        <li><a href="#">Link</a></li>
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
-          <ul class="dropdown-menu">
-            <li><a href="#">Action</a></li>
-            <li><a href="#">Another action</a></li>
-            <li><a href="#">Something else here</a></li>
-            <li role="separator" class="divider"></li>
-            <li><a href="#">Separated link</a></li>
-          </ul>
-        </li>
-      </ul>
-     * */
         $html .= '
-    </div><!-- /.navbar-collapse -->
-  </div><!-- /.container-fluid -->
-</nav>';
+                </ul>
+            ' . $this->loginView->generateOutputForNavigationBar($this->loggedInUser) . '
+            </div><!-- /.navbar-collapse -->
+          </div><!-- /.container-fluid -->
+        </nav>';
 
         return $html;
     }
