@@ -1,4 +1,4 @@
-#Vision for the project – shareable checklists
+#Vision for the project – "shareable checklists"
 ##in the course web development with PHP (1DV608)
 The idea for the project came from a need I have felt from time to time when you like to remember things like for example what you owe or other owes to you, mainly closest friends or family. Even if you write it down on a paper you tend to lose it or spread it out on different notes, making it hard to oversee and keep updated (if actually paid back yet or not). You also would like to share it with the ones who are concerned without having to make too much work. Finding a good application for it that everyone can and will use is also not the easiest. There can also be other things you would like a general shareable space for with your friends or family, like just making notes to each other or discussing in a group without having to use a specific application.
 
@@ -11,3 +11,6 @@ What the shareable parts mean is that it should be possible to register user gro
 Moreover the design of the web page should be done in a way that it is easy to navigate, easy to understand what different buttons do by for example just the colors of it. The layout should be fully responsive, so that it is as easy to use on a small smart phone, tablet or full desktop screen.
 
 Security is also of importance, where you need to be logged in to do most actions and see most of the pages. If you don’t share an entry with a user group no-one else should be able to access it. If you share it with a user group only you and those in that group should be able to see and edit the entry etc.
+
+By Ola Franzén
+October 2015
