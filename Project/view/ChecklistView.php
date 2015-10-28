@@ -689,10 +689,11 @@ class ChecklistView extends GeneralView implements PageView {
                     $html .= '    <div class="pull-right task-buttons">';
                     if ($archived) {
                         $html .= $this->generateChecklistItemButton($id, 3); //de-archive button
-                    } else if ($checked) {
-                        $html .= $this->generateChecklistItemButton($id, 2); //archive button
-                        $html .= $this->generateChecklistItemButton($id, 1); //delete button
                     }
+                    else if ($checked) {
+                        $html .= $this->generateChecklistItemButton($id, 2); //archive button
+                    }
+                    $html .= $this->generateChecklistItemButton($id, 1); //delete button
                     $html .= '    </div>';
                 }
 
